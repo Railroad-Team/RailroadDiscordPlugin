@@ -1,0 +1,13 @@
+settings.tree.plugins.discord=Discord
+railroad.settings.plugins.discord.title=Discord
+railroad.settings.plugins.discord.description=Connect Railroad to Discord to show your activity in your Discord profile.
+
+discord.settings.plugins.discord.client_id.title=Client ID
+discord.settings.plugins.discord.client_id.description=The Client ID of your Discord application. You can find this in the Discord Developer Portal. (Do not edit unless you know what you're doing!)
+
+discord.activity.details.working_on=Working on %s
+discord.activity.details.unknown_file=Unknown file
+discord.activity.details.invalid_project=Invalid project
+discord.activity.details.in_project=In %s
+discord.activity.details.editing_file=Editing %s
+discord.activity.details.modding_minecraft=Modding Minecraft

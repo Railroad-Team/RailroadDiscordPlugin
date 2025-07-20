@@ -1,0 +1,47 @@
+plugins {
+    id 'java'
+    id 'maven-publish'
+    id 'org.openjfx.javafxplugin' version '0.1.0'
+}
+
+group = 'io.github.railroad'
+version = '1.0-SNAPSHOT'
+
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(21))
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.release.set(21)
+}
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+    maven { url 'https://jitpack.io' }
+}
+
+javafx {
+    version = '21.0.2'
+    modules = [ 'javafx.controls', 'javafx.graphics' ]
+}
+
+dependencies {
+    implementation 'io.github.railroad:RailroadPluginAPI:1.0-SNAPSHOT'
+
+    implementation 'org.openjfx:javafx-controls:21.0.2'
+    implementation 'org.openjfx:javafx-graphics:21.0.2'
+
+    annotationProcessor 'org.projectlombok:lombok:1.18.32'
+    compileOnly 'org.projectlombok:lombok:1.18.32'
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+        }
+    }
+}
