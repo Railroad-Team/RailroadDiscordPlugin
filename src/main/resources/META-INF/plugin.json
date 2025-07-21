@@ -2,7 +2,7 @@
   "id": "discord",
   "name": "Discord Integration",
   "version": "1.0.0",
-  "mainClass": "io.github.railroad.discord.DiscordPlugin",
+  "mainClass": "dev.railroadide.discordplugin.DiscordPlugin",
   "description": "A plugin to supply a discord rich presence for Railroad",
   "author": "TurtyWurty",
   "license": "MIT"

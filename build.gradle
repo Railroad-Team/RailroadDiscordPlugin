@@ -4,8 +4,8 @@ plugins {
     id 'org.openjfx.javafxplugin' version '0.1.0'
 }
 
-group = 'io.github.railroad'
-version = '1.0-SNAPSHOT'
+group = 'dev.railroadide'
+version = '1.0.0'
 
 java {
     toolchain {
@@ -20,7 +20,7 @@ tasks.withType(JavaCompile).configureEach {
 repositories {
     mavenLocal()
     mavenCentral()
-    maven { url 'https://jitpack.io' }
+    maven { url "https://maven.railroadide.dev/releases" }
 }
 
 javafx {
@@ -29,7 +29,7 @@ javafx {
 }
 
 dependencies {
-    implementation 'io.github.railroad:RailroadPluginAPI:1.0-SNAPSHOT'
+    implementation 'dev.railroadide:RailroadPluginAPI:1.0.0'
 
     implementation 'org.openjfx:javafx-controls:21.0.2'
     implementation 'org.openjfx:javafx-graphics:21.0.2'
