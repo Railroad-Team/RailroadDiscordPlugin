@@ -11,7 +11,6 @@ import dev.railroadide.core.settings.SettingCategory;
 import dev.railroadide.discordplugin.activity.DiscordActivity;
 import dev.railroadide.discordplugin.core.DiscordCore;
 import dev.railroadide.logger.Logger;
-import dev.railroadide.logger.LoggerManager;
 import dev.railroadide.railroadpluginapi.Plugin;
 import dev.railroadide.railroadpluginapi.PluginContext;
 import dev.railroadide.railroadpluginapi.Registries;
@@ -23,6 +22,7 @@ import dev.railroadide.railroadpluginapi.events.FileEvent;
 import dev.railroadide.railroadpluginapi.events.ProjectEvent;
 import dev.railroadide.railroadpluginapi.services.ApplicationInfoService;
 import dev.railroadide.railroadpluginapi.services.IDEStateService;
+import lombok.Getter;
 
 import java.nio.file.Files;
 
@@ -32,7 +32,8 @@ public class DiscordPlugin implements Plugin {
             .disableHtmlEscaping()
             .create();
 
-    public static final Logger LOGGER = LoggerManager.create(DiscordPlugin.class).build();
+    @Getter
+    public static Logger logger;
 
     private DiscordCore discordCore;
 
@@ -50,7 +51,7 @@ public class DiscordPlugin implements Plugin {
                 .defaultValue(853387211897700394L) // Default client ID for Railroad Discord
                 .build());
 
-        context.setLogger(LOGGER);
+        logger = context.getLogger();
 
         EventBus eventBus = context.getEventBus();
         LocalizationService localizationService = LocalizationServiceLocator.getInstance();
@@ -61,13 +62,13 @@ public class DiscordPlugin implements Plugin {
             if (event.isOpened()) {
                 ApplicationInfoService applicationInfo = context.getService(ApplicationInfoService.class);
                 if (applicationInfo == null) {
-                    LOGGER.warn("ApplicationInfoService is not available, cannot update Discord activity.");
+                    logger.warn("ApplicationInfoService is not available, cannot update Discord activity.");
                     return;
                 }
 
                 Project project = event.project();
                 if (project == null) {
-                    LOGGER.warn("Project is null, cannot update Discord activity.");
+                    logger.warn("Project is null, cannot update Discord activity.");
                     return;
                 }
 
@@ -90,13 +91,13 @@ public class DiscordPlugin implements Plugin {
             if (event.isActivated()) {
                 ApplicationInfoService applicationInfo = context.getService(ApplicationInfoService.class);
                 if (applicationInfo == null) {
-                    LOGGER.warn("ApplicationInfoService is not available, cannot update Discord activity.");
+                    logger.warn("ApplicationInfoService is not available, cannot update Discord activity.");
                     return;
                 }
 
                 IDEStateService ideState = context.getService(IDEStateService.class);
                 if (ideState == null) {
-                    LOGGER.warn("IDEStateService is not available, cannot update Discord activity.");
+                    logger.warn("IDEStateService is not available, cannot update Discord activity.");
                     return;
                 }
 
@@ -124,7 +125,7 @@ public class DiscordPlugin implements Plugin {
             if (discordCore != null) {
                 ApplicationInfoService applicationInfo = context.getService(ApplicationInfoService.class);
                 if (applicationInfo == null) {
-                    LOGGER.warn("ApplicationInfoService is not available, cannot update Discord activity.");
+                    logger.warn("ApplicationInfoService is not available, cannot update Discord activity.");
                     return;
                 }
 
@@ -142,7 +143,7 @@ public class DiscordPlugin implements Plugin {
             discordCore = new DiscordCore(String.valueOf(discordId.getValue()));
             discordCore.start();
 
-            LOGGER.info("Discord integration started successfully with client ID: " + discordId.getValue());
+            logger.info("Discord integration started successfully with client ID: " + discordId.getValue());
 
             DiscordActivity.builder()
                     .playing()
@@ -158,7 +159,7 @@ public class DiscordPlugin implements Plugin {
                 }
             });
         } catch (Exception exception) {
-            LOGGER.error("Failed to start Discord integration", exception);
+            logger.error("Failed to start Discord integration", exception);
             discordCore = null;
         }
     }
