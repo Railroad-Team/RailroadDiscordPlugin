@@ -109,6 +109,20 @@ public class DiscordActivity {
                 '}';
     }
 
+    public enum ActivityButtonsMode {
+        BUTTONS,
+        SECRETS
+    }
+
+    public enum ActivityType {
+        PLAYING,
+        STREAMING,
+        LISTENING,
+        WATCHING,
+        CUSTOM,
+        COMPETING
+    }
+
     public static class Builder {
         private final DiscordActivity activity;
 
@@ -270,19 +284,5 @@ public class DiscordActivity {
             manager.updateActivity(activity);
             return activity;
         }
-    }
-
-    public enum ActivityButtonsMode {
-        BUTTONS,
-        SECRETS
-    }
-
-    public enum ActivityType {
-        PLAYING,
-        STREAMING,
-        LISTENING,
-        WATCHING,
-        CUSTOM,
-        COMPETING
     }
 }

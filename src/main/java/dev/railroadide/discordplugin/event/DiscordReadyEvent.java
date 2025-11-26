@@ -1,8 +1,8 @@
 package dev.railroadide.discordplugin.event;
 
+import com.google.gson.annotations.SerializedName;
 import dev.railroadide.discordplugin.core.DiscordCore;
 import dev.railroadide.discordplugin.data.DiscordUser;
-import lombok.Getter;
 
 public class DiscordReadyEvent {
     public static class Data {
@@ -19,31 +19,14 @@ public class DiscordReadyEvent {
                     '}';
         }
 
-        static class Config {
-            private final String cdn_host;
-            private final String api_endpoint;
-            @Getter
-            private final String environment;
-
-            public Config(String cdn_host, String api_endpoint, String environment) {
-                this.cdn_host = cdn_host;
-                this.api_endpoint = api_endpoint;
-                this.environment = environment;
-            }
-
-            public String getCdnHost() {
-                return cdn_host;
-            }
-
-            public String getApiEndpoint() {
-                return api_endpoint;
-            }
-
+        record Config(@SerializedName("cdn_host") String cdnHost,
+                      @SerializedName("api_endpoint") String apiEndpoint,
+                      String environment) {
             @Override
             public String toString() {
                 return "ReadyConfig{" +
-                        "cdn_host='" + cdn_host + '\'' +
-                        ", api_endpoint='" + api_endpoint + '\'' +
+                        "cdn_host='" + cdnHost + '\'' +
+                        ", api_endpoint='" + apiEndpoint + '\'' +
                         ", environment='" + environment + '\'' +
                         '}';
             }

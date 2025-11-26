@@ -103,4 +103,9 @@ public final class UnixDiscordIPCChannel implements DiscordIPCChannel {
     public int write(ByteBuffer src) throws IOException {
         return this.channel.write(src);
     }
+
+    @Override
+    public boolean isOpen() {
+        return this.channel.isOpen();
+    }
 }

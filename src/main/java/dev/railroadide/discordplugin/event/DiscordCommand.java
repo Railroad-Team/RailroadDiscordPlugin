@@ -1,57 +1,23 @@
 package dev.railroadide.discordplugin.event;
 
 import com.google.gson.JsonElement;
+import com.google.gson.annotations.SerializedName;
+import lombok.Getter;
+import lombok.Setter;
 
+@Setter
+@Getter
 public class DiscordCommand {
     private Type cmd;
     private JsonElement data;
 
     private JsonElement args;
-    private Event evt;
+    @SerializedName("evt")
+    private Event event;
     private String nonce;
 
-    public Type getCmd() {
-        return cmd;
-    }
-
-    public void setCmd(Type cmd) {
-        this.cmd = cmd;
-    }
-
-    public JsonElement getData() {
-        return data;
-    }
-
-    public void setData(JsonElement data) {
-        this.data = data;
-    }
-
-    public JsonElement getArgs() {
-        return args;
-    }
-
-    public void setArgs(JsonElement args) {
-        this.args = args;
-    }
-
-    public Event getEvt() {
-        return evt;
-    }
-
-    public void setEvt(Event evt) {
-        this.evt = evt;
-    }
-
-    public String getNonce() {
-        return nonce;
-    }
-
-    public void setNonce(String nonce) {
-        this.nonce = nonce;
-    }
-
     public boolean isError() {
-        return this.evt == Event.ERROR;
+        return this.event == Event.ERROR;
     }
 
     @Override
@@ -60,7 +26,7 @@ public class DiscordCommand {
                 "type=" + cmd +
                 ", data=" + data +
                 ", args=" + args +
-                ", event=" + evt +
+                ", event=" + event +
                 ", nonce='" + nonce + '\'' +
                 '}';
     }

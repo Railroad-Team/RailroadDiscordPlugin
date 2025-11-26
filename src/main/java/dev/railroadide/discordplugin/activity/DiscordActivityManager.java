@@ -12,13 +12,7 @@ import java.util.function.Consumer;
  * @see <a href="https://discordapp.com/developers/docs/game-sdk/activities">
  * https://discordapp.com/developers/docs/game-sdk/activities</a>
  */
-public class DiscordActivityManager {
-    private final DiscordCore core;
-
-    public DiscordActivityManager(DiscordCore core) {
-        this.core = core;
-    }
-
+public record DiscordActivityManager(DiscordCore core) {
     /**
      * <p>Updates the user's current presence to a new activity.</p>
      * <p>The {@link DiscordCore#DEFAULT_CALLBACK} is used to handle the returned {@link DiscordResult}.</p>

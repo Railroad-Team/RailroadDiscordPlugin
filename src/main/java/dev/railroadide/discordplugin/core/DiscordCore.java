@@ -1,5 +1,6 @@
 package dev.railroadide.discordplugin.core;
 
+import dev.railroadide.core.utility.OperatingSystem;
 import dev.railroadide.discordplugin.DiscordPlugin;
 import dev.railroadide.discordplugin.activity.DiscordActivityManager;
 import dev.railroadide.discordplugin.data.*;
@@ -17,10 +18,10 @@ import java.nio.ByteOrder;
 import java.nio.channels.ClosedChannelException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 
 public final class DiscordCore implements AutoCloseable {
@@ -30,13 +31,13 @@ public final class DiscordCore implements AutoCloseable {
     };
 
     private final Queue<CommandWithCallback> commandQueue = new ArrayDeque<>();
-    private final DiscordIPCChannel ipcChannel;
-    private String clientId;
     @Getter
     private final DiscordActivityManager activityManager;
     private final Map<String, Consumer<DiscordCommand>> handlers = new ConcurrentHashMap<>();
     private final DiscordEvents events;
-
+    private final BooleanSupplier shouldReconnectOnActivityUpdate;
+    private DiscordIPCChannel ipcChannel;
+    private String clientId;
     private long nonce;
     private DiscordConnectionState connectionState;
     @Setter
@@ -47,8 +48,9 @@ public final class DiscordCore implements AutoCloseable {
     private long pid = ProcessHandle.current().pid();
     private boolean isShuttingDown = false;
 
-    public DiscordCore(String clientId) throws DiscordException {
+    public DiscordCore(String clientId, BooleanSupplier shouldReconnectOnActivityUpdate) throws DiscordException {
         this.clientId = clientId;
+        this.shouldReconnectOnActivityUpdate = shouldReconnectOnActivityUpdate;
 
         this.connectionState = DiscordConnectionState.HANDSHAKE;
         this.nonce = 0L;
@@ -58,19 +60,32 @@ public final class DiscordCore implements AutoCloseable {
             this.ipcChannel = findIPCChannel();
             this.ipcChannel.configureBlocking(false);
         } catch (IOException exception) {
-            // Railroad.showErrorAlert("Failed to connect to Discord", "Failed to connect to Discord IPC channel", null);
-            throw new RuntimeException("Failed to connect to Discord IPC channel", exception);
+            this.connectionState = DiscordConnectionState.ERROR;
+            DiscordPlugin.getLogger().error("Failed to connect to Discord IPC channel", exception);
+            // TODO: Notification in the IDE
         }
 
         this.activityManager = new DiscordActivityManager(this);
     }
 
+    /**
+     * Finds the appropriate IPC channel for the current operating system.
+     *
+     * @return The DiscordIPCChannel instance for the current OS.
+     * @throws IOException If an I/O error occurs while trying to connect to the IPC channel.
+     */
     public static DiscordIPCChannel findIPCChannel() throws IOException {
-        return System.getProperty("os.name").toLowerCase(Locale.ROOT).contains("windows") ?
-                new WindowsDiscordIPCChannel() : new UnixDiscordIPCChannel();
+        return OperatingSystem.CURRENT == OperatingSystem.WINDOWS ?
+                new WindowsDiscordIPCChannel() :
+                new UnixDiscordIPCChannel();
     }
 
-    public void start() throws RuntimeException {
+    /**
+     * Connects to the Discord IPC channel and sends the handshake message.
+     *
+     * @throws RuntimeException If the connection fails or if the IPC channel is shutting down.
+     */
+    public void connect() throws RuntimeException {
         if (this.isShuttingDown)
             throw new RuntimeException("Discord IPC is shutting down");
 
@@ -119,8 +134,8 @@ public final class DiscordCore implements AutoCloseable {
 
         if (command.getNonce() != null) {
             this.handlers.remove(command.getNonce()).accept(command);
-        } else if (command.getEvt() != null) {
-            DiscordEventHandler<?> handler = this.events.getHandler(command.getEvt());
+        } else if (command.getEvent() != null) {
+            DiscordEventHandler<?> handler = this.events.getHandler(command.getEvent());
             Object data = DiscordPlugin.GSON.fromJson(command.getData(), handler.getDataClass());
             handler.handleObject(command, data);
         }
@@ -166,6 +181,10 @@ public final class DiscordCore implements AutoCloseable {
         sendBytes(string.getBytes(StandardCharsets.UTF_8));
     }
 
+    /**
+     * Called when the IPC channel is ready to send and receive commands.
+     * Registers event handlers and processes any queued commands.
+     */
     public void onReady() {
         this.connectionState = DiscordConnectionState.CONNECTED;
         registerEvents();
@@ -186,7 +205,7 @@ public final class DiscordCore implements AutoCloseable {
 
             var command = new DiscordCommand();
             command.setCmd(DiscordCommand.Type.SUBSCRIBE);
-            command.setEvt(event);
+            command.setEvent(event);
             command.setArgs(DiscordPlugin.GSON.toJsonTree(eventHandler.getRegistrationArgs()));
             command.setNonce(Long.toString(++this.nonce));
             sendCommand(command, response -> DiscordPlugin.getLogger().debug("Registered event {}", event.name()));
@@ -194,7 +213,7 @@ public final class DiscordCore implements AutoCloseable {
     }
 
     private void sendCommand(DiscordCommand command, Consumer<DiscordCommand> callback) {
-        if (this.connectionState == DiscordConnectionState.HANDSHAKE && command.getEvt() != DiscordCommand.Event.READY) {
+        if (this.connectionState == DiscordConnectionState.HANDSHAKE && command.getEvent() != DiscordCommand.Event.READY) {
             this.commandQueue.add(new CommandWithCallback(command, callback));
             return;
         }
@@ -208,8 +227,14 @@ public final class DiscordCore implements AutoCloseable {
         }
     }
 
+    /**
+     * Checks if the given command is an error response and logs it if so.
+     *
+     * @param command The DiscordCommand to check.
+     * @return A DiscordResult indicating success or the specific error code.
+     */
     public DiscordResult checkError(DiscordCommand command) {
-        if (command.getEvt() == DiscordCommand.Event.ERROR) {
+        if (command.getEvent() == DiscordCommand.Event.ERROR) {
             var error = DiscordPlugin.GSON.fromJson(command.getData(), DiscordError.class);
             DiscordPlugin.getLogger().error("Received error from Discord IPC channel: {}", error.getMessage());
 
@@ -219,7 +244,32 @@ public final class DiscordCore implements AutoCloseable {
         return DiscordResult.OK;
     }
 
+    /**
+     * Sends a command to the Discord IPC channel.
+     * If the command is of type SET_ACTIVITY and the shouldReconnectOnActivityUpdate flag is set,
+     * it will attempt to reconnect to the IPC channel if not already connected.
+     *
+     * @param type   The type of command to send.
+     * @param args   The arguments for the command.
+     * @param object A callback to handle the response from Discord.
+     * @throws IllegalArgumentException If the command type is null or if the client ID is not set.
+     */
     public void sendCommand(DiscordCommand.Type type, Object args, Consumer<DiscordCommand> object) {
+        if (type == null)
+            throw new IllegalArgumentException("Command type cannot be null");
+
+        if (type == DiscordCommand.Type.SET_ACTIVITY && this.shouldReconnectOnActivityUpdate.getAsBoolean()) {
+            try {
+                if (this.ipcChannel == null || !this.ipcChannel.isOpen()) {
+                    this.ipcChannel = findIPCChannel();
+                    this.ipcChannel.configureBlocking(false);
+                    connect();
+                }
+            } catch (IOException | RuntimeException exception) {
+                DiscordPlugin.getLogger().error("Failed to reconnect to Discord IPC channel", exception);
+            }
+        }
+
         var command = new DiscordCommand();
         command.setCmd(type);
         command.setArgs(DiscordPlugin.GSON.toJsonTree(args).getAsJsonObject());
@@ -238,13 +288,19 @@ public final class DiscordCore implements AutoCloseable {
         this.isShuttingDown = true;
     }
 
+    /**
+     * Sets the client ID for the Discord application.
+     *
+     * @param id The client ID to set.
+     * @throws IllegalArgumentException If the client ID is null or blank.
+     */
     public void setClientId(String id) {
         if (id == null || id.isBlank())
             throw new IllegalArgumentException("Client ID cannot be null or blank");
 
         this.clientId = id;
-
     }
 
-    private record CommandWithCallback(DiscordCommand command, Consumer<DiscordCommand> callback) {}
+    private record CommandWithCallback(DiscordCommand command, Consumer<DiscordCommand> callback) {
+    }
 }

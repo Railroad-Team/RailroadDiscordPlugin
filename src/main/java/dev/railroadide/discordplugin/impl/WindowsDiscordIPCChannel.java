@@ -73,4 +73,9 @@ public final class WindowsDiscordIPCChannel implements DiscordIPCChannel {
         this.channel.force(false);
         return result;
     }
+
+    @Override
+    public boolean isOpen() {
+        return this.channel.isOpen();
+    }
 }

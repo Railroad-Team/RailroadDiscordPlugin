@@ -8,6 +8,7 @@ import dev.railroadide.core.registry.Registry;
 import dev.railroadide.core.settings.DefaultSettingCodecs;
 import dev.railroadide.core.settings.Setting;
 import dev.railroadide.core.settings.SettingCategory;
+import dev.railroadide.core.utility.ComboBoxConverter;
 import dev.railroadide.discordplugin.activity.DiscordActivity;
 import dev.railroadide.discordplugin.core.DiscordCore;
 import dev.railroadide.logger.Logger;
@@ -31,24 +32,58 @@ public class DiscordPlugin implements Plugin {
             .setPrettyPrinting()
             .disableHtmlEscaping()
             .create();
-
+    private static final long DEFAULT_CLIENT_ID = 853387211897700394L;
     @Getter
     public static Logger logger;
 
     private DiscordCore discordCore;
 
+    @SuppressWarnings("unchecked")
     @Override
     public void onEnable(PluginContext context) {
         if (context == null)
             throw new IllegalArgumentException("PluginContext cannot be null");
 
         Registry<Setting<?>> settingRegistry = Registries.getSettingsRegistry(context);
-        // noinspection unchecked
         Setting<Long> discordId = (Setting<Long>) settingRegistry.register("discord:client_id", Setting.builder(Long.class, "discord:client_id")
                 .treePath("plugins.discord")
                 .category(SettingCategory.simple("railroad:plugins.discord"))
+                .description("discord.setting.client_id.description")
                 .codec(DefaultSettingCodecs.LONG)
-                .defaultValue(853387211897700394L) // Default client ID for Railroad Discord
+                .defaultValue(DEFAULT_CLIENT_ID)
+                .build());
+
+        Setting<Boolean> shouldReconnectOnActivityUpdate = (Setting<Boolean>) settingRegistry.register("discord:reconnect_on_activity_update", Setting.builder(Boolean.class, "discord:reconnect_on_activity_update")
+                .treePath("plugins.discord")
+                .category(SettingCategory.simple("railroad:plugins.discord"))
+                .description("discord.setting.reconnect_on_activity_update.description")
+                .codec(DefaultSettingCodecs.BOOLEAN)
+                .defaultValue(true)
+                .build());
+
+        Setting<Integer> hideAfterMinutes = (Setting<Integer>) settingRegistry.register("discord:hide_after_minutes", Setting.builder(Integer.class, "discord:hide_after_minutes")
+                .treePath("plugins.discord")
+                .category(SettingCategory.simple("railroad:plugins.discord"))
+                .description("discord.setting.hide_after_minutes.description")
+                .codec(DefaultSettingCodecs.INTEGER)
+                .defaultValue(20)
+                .build());
+
+        Setting<DisplayMode> displayMode = (Setting<DisplayMode>) settingRegistry.register("discord:display_mode", Setting.builder(DisplayMode.class, "discord:display_mode")
+                .treePath("plugins.discord")
+                .category(SettingCategory.simple("railroad:plugins.discord"))
+                .description("discord.setting.display_mode.description")
+                .codec(DefaultSettingCodecs.ofEnum("discord:display_mode", DisplayMode.class, DisplayMode::name, name -> {
+                    try {
+                        return DisplayMode.valueOf(name);
+                    } catch (IllegalArgumentException ignored) {
+                        return DisplayMode.DOCUMENT;
+                    }
+                }, new ComboBoxConverter<>(DisplayMode::getTranslationKey, name -> {
+                    DisplayMode mode = DisplayMode.fromTranslationKey(name);
+                    return mode != null ? mode : DisplayMode.DOCUMENT;
+                })))
+                .defaultValue(DisplayMode.DOCUMENT)
                 .build());
 
         logger = context.getLogger();
@@ -88,7 +123,7 @@ public class DiscordPlugin implements Plugin {
             if (discordCore == null)
                 return;
 
-            if (event.isActivated()) {
+            if (event.isActivatedEvent()) {
                 ApplicationInfoService applicationInfo = context.getService(ApplicationInfoService.class);
                 if (applicationInfo == null) {
                     logger.warn("ApplicationInfoService is not available, cannot update Discord activity.");
@@ -140,8 +175,8 @@ public class DiscordPlugin implements Plugin {
         });
 
         try {
-            discordCore = new DiscordCore(String.valueOf(discordId.getValue()));
-            discordCore.start();
+            discordCore = new DiscordCore(String.valueOf(discordId.getValue()), shouldReconnectOnActivityUpdate::getValue);
+            discordCore.connect();
 
             logger.info("Discord integration started successfully with client ID: " + discordId.getValue());
 
@@ -174,6 +209,10 @@ public class DiscordPlugin implements Plugin {
         Registry<Setting<?>> settingRegistry = Registries.getSettingsRegistry(context);
         try {
             settingRegistry.unregister("discord:client_id");
-        } catch (Exception ignored) {}
+            settingRegistry.unregister("discord:reconnect_on_activity_update");
+            settingRegistry.unregister("discord:hide_after_minutes");
+            settingRegistry.unregister("discord:display_mode");
+        } catch (Exception ignored) {
+        }
     }
 }

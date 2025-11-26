@@ -13,4 +13,6 @@ public interface DiscordIPCChannel {
     long read(ByteBuffer[] dsts, int offset, int length) throws IOException;
 
     int write(ByteBuffer src) throws IOException;
+
+    boolean isOpen();
 }
