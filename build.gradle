@@ -1,11 +1,17 @@
 plugins {
     id 'java'
     id 'maven-publish'
-    id 'org.openjfx.javafxplugin' version '0.1.0'
+    id 'dev.railroadide.railroadpluginapi' version '0.4.0'
+}
+
+railroadDependency {
+    branch = 'dev'
+    commitHash = 'HEAD'
+    jarTaskName = 'shadowJar'
 }
 
 group = 'dev.railroadide'
-version = '1.0.0'
+version = '2.0.0'
 
 java {
     toolchain {
@@ -18,22 +24,10 @@ tasks.withType(JavaCompile).configureEach {
 }
 
 repositories {
-    mavenLocal()
     mavenCentral()
-    maven { url "https://maven.railroadide.dev/releases" }
-}
-
-javafx {
-    version = '21.0.2'
-    modules = [ 'javafx.controls', 'javafx.graphics' ]
 }
 
 dependencies {
-    implementation 'dev.railroadide:RailroadPluginAPI:1.0.3'
-
-    implementation 'org.openjfx:javafx-controls:21.0.2'
-    implementation 'org.openjfx:javafx-graphics:21.0.2'
-
     annotationProcessor 'org.projectlombok:lombok:1.18.32'
     compileOnly 'org.projectlombok:lombok:1.18.32'
 }

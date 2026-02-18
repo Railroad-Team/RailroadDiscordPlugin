@@ -3,6 +3,7 @@ package dev.railroadide.discordplugin.event;
 import com.google.gson.annotations.SerializedName;
 import dev.railroadide.discordplugin.core.DiscordCore;
 import dev.railroadide.discordplugin.data.DiscordUser;
+import org.jspecify.annotations.NonNull;
 
 public class DiscordReadyEvent {
     public static class Data {
@@ -23,7 +24,7 @@ public class DiscordReadyEvent {
                       @SerializedName("api_endpoint") String apiEndpoint,
                       String environment) {
             @Override
-            public String toString() {
+            public @NonNull String toString() {
                 return "ReadyConfig{" +
                         "cdn_host='" + cdnHost + '\'' +
                         ", api_endpoint='" + apiEndpoint + '\'' +

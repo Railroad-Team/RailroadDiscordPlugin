@@ -7,12 +7,16 @@ public class DiscordUser {
     @SerializedName("id")
     private final String userId;
 
+    @Getter
     private final String username;
+    @Getter
     private final String discriminator;
+    @Getter
     private final String avatar;
     private final AvatarDecorationData avatar_decoration_data;
 
     private final Boolean bot;
+    @Getter
     private final Integer flags;
     private final Integer premium_type;
 
@@ -53,18 +57,6 @@ public class DiscordUser {
         return Long.parseLong(userId);
     }
 
-    public String getUsername() {
-        return username;
-    }
-
-    public String getDiscriminator() {
-        return discriminator;
-    }
-
-    public String getAvatar() {
-        return avatar;
-    }
-
     public String getAvatarUrl() {
         return "https://cdn.discordapp.com/avatars/" + userId + "/" + avatar + ".png";
     }
@@ -79,10 +71,6 @@ public class DiscordUser {
 
     public Integer getPremiumType() {
         return premium_type;
-    }
-
-    public Integer getFlags() {
-        return flags;
     }
 
     @Override

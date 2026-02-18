@@ -1,7 +1,7 @@
 {
   "id": "discord",
   "name": "Discord Integration",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "mainClass": "dev.railroadide.discordplugin.DiscordPlugin",
   "description": "A plugin to supply a discord rich presence for Railroad",
   "author": "TurtyWurty",

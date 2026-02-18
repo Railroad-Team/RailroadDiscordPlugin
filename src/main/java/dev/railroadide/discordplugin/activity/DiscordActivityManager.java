@@ -53,6 +53,6 @@ public record DiscordActivityManager(DiscordCore core) {
      * https://discordapp.com/developers/docs/game-sdk/activities#clearactivity</a>
      */
     public void clearActivity(Consumer<DiscordResult> callback) {
-        updateActivity(null);
+        updateActivity(null, callback);
     }
 }

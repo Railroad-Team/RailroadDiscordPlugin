@@ -10,7 +10,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.IntStream;
@@ -61,7 +60,7 @@ public final class UnixDiscordIPCChannel implements DiscordIPCChannel {
                                 .map(Path::toAbsolutePath)
                                 .map(Path::toString);
                     } catch (IOException exception) {
-                        return Arrays.stream(new String[0]);
+                        return Stream.empty();
                     }
                 }).toList();
 

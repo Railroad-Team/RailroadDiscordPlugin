@@ -1,6 +1,5 @@
 package dev.railroadide.discordplugin.core;
 
-import dev.railroadide.core.utility.OperatingSystem;
 import dev.railroadide.discordplugin.DiscordPlugin;
 import dev.railroadide.discordplugin.activity.DiscordActivityManager;
 import dev.railroadide.discordplugin.data.*;
@@ -9,6 +8,7 @@ import dev.railroadide.discordplugin.event.DiscordEventHandler;
 import dev.railroadide.discordplugin.event.DiscordEvents;
 import dev.railroadide.discordplugin.impl.UnixDiscordIPCChannel;
 import dev.railroadide.discordplugin.impl.WindowsDiscordIPCChannel;
+import dev.railroadide.railroad.utility.OperatingSystem;
 import lombok.Getter;
 import lombok.Setter;
 

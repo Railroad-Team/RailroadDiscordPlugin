@@ -2,27 +2,27 @@ package dev.railroadide.discordplugin;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import dev.railroadide.core.localization.LocalizationService;
-import dev.railroadide.core.localization.LocalizationServiceLocator;
-import dev.railroadide.core.registry.Registry;
-import dev.railroadide.core.settings.DefaultSettingCodecs;
-import dev.railroadide.core.settings.Setting;
-import dev.railroadide.core.settings.SettingCategory;
-import dev.railroadide.core.utility.ComboBoxConverter;
 import dev.railroadide.discordplugin.activity.DiscordActivity;
 import dev.railroadide.discordplugin.core.DiscordCore;
 import dev.railroadide.logger.Logger;
-import dev.railroadide.railroadpluginapi.Plugin;
-import dev.railroadide.railroadpluginapi.PluginContext;
-import dev.railroadide.railroadpluginapi.Registries;
-import dev.railroadide.railroadpluginapi.dto.Document;
-import dev.railroadide.railroadpluginapi.dto.Project;
-import dev.railroadide.railroadpluginapi.event.EventBus;
-import dev.railroadide.railroadpluginapi.events.EnterDefaultStateEvent;
-import dev.railroadide.railroadpluginapi.events.FileEvent;
-import dev.railroadide.railroadpluginapi.events.ProjectEvent;
-import dev.railroadide.railroadpluginapi.services.ApplicationInfoService;
-import dev.railroadide.railroadpluginapi.services.IDEStateService;
+import dev.railroadide.railroad.Services;
+import dev.railroadide.railroad.localization.L18n;
+import dev.railroadide.railroad.plugin.spi.Plugin;
+import dev.railroadide.railroad.plugin.spi.PluginContext;
+import dev.railroadide.railroad.plugin.spi.dto.Document;
+import dev.railroadide.railroad.plugin.spi.dto.Project;
+import dev.railroadide.railroad.plugin.spi.event.EventBus;
+import dev.railroadide.railroad.plugin.spi.events.EnterDefaultStateEvent;
+import dev.railroadide.railroad.plugin.spi.events.FileEvent;
+import dev.railroadide.railroad.plugin.spi.events.ProjectEvent;
+import dev.railroadide.railroad.plugin.spi.services.ApplicationInfoService;
+import dev.railroadide.railroad.plugin.spi.services.DocumentEditorStateService;
+import dev.railroadide.railroad.plugin.spi.services.IDEStateService;
+import dev.railroadide.railroad.settings.DefaultSettingCodecs;
+import dev.railroadide.railroad.settings.Setting;
+import dev.railroadide.railroad.settings.SettingCategory;
+import dev.railroadide.railroad.settings.handler.SettingsHandler;
+import dev.railroadide.railroad.utility.javafx.ComboBoxConverter;
 import lombok.Getter;
 
 import java.nio.file.Files;
@@ -44,8 +44,7 @@ public class DiscordPlugin implements Plugin {
         if (context == null)
             throw new IllegalArgumentException("PluginContext cannot be null");
 
-        Registry<Setting<?>> settingRegistry = Registries.getSettingsRegistry(context);
-        Setting<Long> discordId = (Setting<Long>) settingRegistry.register("discord:client_id", Setting.builder(Long.class, "discord:client_id")
+        Setting<Long> discordId = (Setting<Long>) SettingsHandler.SETTINGS_REGISTRY.register("discord:client_id", Setting.builder(Long.class, "discord:client_id")
                 .treePath("plugins.discord")
                 .category(SettingCategory.simple("railroad:plugins.discord"))
                 .description("discord.setting.client_id.description")
@@ -53,7 +52,7 @@ public class DiscordPlugin implements Plugin {
                 .defaultValue(DEFAULT_CLIENT_ID)
                 .build());
 
-        Setting<Boolean> shouldReconnectOnActivityUpdate = (Setting<Boolean>) settingRegistry.register("discord:reconnect_on_activity_update", Setting.builder(Boolean.class, "discord:reconnect_on_activity_update")
+        Setting<Boolean> shouldReconnectOnActivityUpdate = (Setting<Boolean>) SettingsHandler.SETTINGS_REGISTRY.register("discord:reconnect_on_activity_update", Setting.builder(Boolean.class, "discord:reconnect_on_activity_update")
                 .treePath("plugins.discord")
                 .category(SettingCategory.simple("railroad:plugins.discord"))
                 .description("discord.setting.reconnect_on_activity_update.description")
@@ -61,7 +60,7 @@ public class DiscordPlugin implements Plugin {
                 .defaultValue(true)
                 .build());
 
-        Setting<Integer> hideAfterMinutes = (Setting<Integer>) settingRegistry.register("discord:hide_after_minutes", Setting.builder(Integer.class, "discord:hide_after_minutes")
+        Setting<Integer> hideAfterMinutes = (Setting<Integer>) SettingsHandler.SETTINGS_REGISTRY.register("discord:hide_after_minutes", Setting.builder(Integer.class, "discord:hide_after_minutes")
                 .treePath("plugins.discord")
                 .category(SettingCategory.simple("railroad:plugins.discord"))
                 .description("discord.setting.hide_after_minutes.description")
@@ -69,7 +68,7 @@ public class DiscordPlugin implements Plugin {
                 .defaultValue(20)
                 .build());
 
-        Setting<DisplayMode> displayMode = (Setting<DisplayMode>) settingRegistry.register("discord:display_mode", Setting.builder(DisplayMode.class, "discord:display_mode")
+        Setting<DisplayMode> displayMode = (Setting<DisplayMode>) SettingsHandler.SETTINGS_REGISTRY.register("discord:display_mode", Setting.builder(DisplayMode.class, "discord:display_mode")
                 .treePath("plugins.discord")
                 .category(SettingCategory.simple("railroad:plugins.discord"))
                 .description("discord.setting.display_mode.description")
@@ -89,7 +88,6 @@ public class DiscordPlugin implements Plugin {
         logger = context.getLogger();
 
         EventBus eventBus = context.getEventBus();
-        LocalizationService localizationService = LocalizationServiceLocator.getInstance();
         eventBus.subscribe(ProjectEvent.class, event -> {
             if (discordCore == null)
                 return;
@@ -110,7 +108,7 @@ public class DiscordPlugin implements Plugin {
                 DiscordActivity.builder()
                         .playing()
                         .state(applicationInfo.getVersion())
-                        .details(localizationService.get("discord.activity.details.working_on", project.getAlias()))
+                        .details(L18n.localize("discord.activity.details.working_on", project.getAlias()))
                         .startNow()
                         .largeImage("logo")
                         .buildAndSet(discordCore.getActivityManager());
@@ -140,16 +138,16 @@ public class DiscordPlugin implements Plugin {
 
                 String name = file.getName();
                 if (file.getName() == null) {
-                    name = Files.exists(file.getPath()) ? file.getPath().getFileName().toString() : localizationService.get("discord.activity.details.unknown_file");
+                    name = Files.exists(file.getPath()) ? file.getPath().getFileName().toString() : L18n.localize("discord.activity.details.unknown_file");
                 }
 
-                String projectAlias = ideState.getCurrentProject() != null ? ideState.getCurrentProject().getAlias() : localizationService.get("discord.activity.details.invalid_project");
+                String projectAlias = ideState.getCurrentProject() != null ? ideState.getCurrentProject().getAlias() : L18n.localize("discord.activity.details.invalid_project");
 
                 DiscordActivity.builder()
                         .playing()
                         .state(applicationInfo.getVersion())
-                        .details(localizationService.get("discord.activity.details.in_project", projectAlias) + "\n" +
-                                localizationService.get("discord.activity.details.editing_file", name))
+                        .details(L18n.localize("discord.activity.details.in_project", projectAlias) + "\n" +
+                                L18n.localize("discord.activity.details.editing_file", name))
                         .startNow()
                         .largeImage("logo") // TODO: Set the image to the file type
                         .buildAndSet(discordCore.getActivityManager());
@@ -167,7 +165,7 @@ public class DiscordPlugin implements Plugin {
                 DiscordActivity.builder()
                         .playing()
                         .state(applicationInfo.getVersion())
-                        .details(localizationService.get("discord.activity.details.modding_minecraft"))
+                        .details(L18n.localize("discord.activity.details.modding_minecraft"))
                         .startNow()
                         .largeImage("logo")
                         .buildAndSet(discordCore.getActivityManager());
@@ -183,7 +181,7 @@ public class DiscordPlugin implements Plugin {
             DiscordActivity.builder()
                     .playing()
                     .state(context.getService(ApplicationInfoService.class).getVersion())
-                    .details(localizationService.get("discord.activity.details.modding_minecraft"))
+                    .details(L18n.localize("discord.activity.details.modding_minecraft"))
                     .startNow()
                     .largeImage("logo")
                     .buildAndSet(discordCore.getActivityManager());
@@ -206,12 +204,11 @@ public class DiscordPlugin implements Plugin {
             discordCore = null;
         }
 
-        Registry<Setting<?>> settingRegistry = Registries.getSettingsRegistry(context);
         try {
-            settingRegistry.unregister("discord:client_id");
-            settingRegistry.unregister("discord:reconnect_on_activity_update");
-            settingRegistry.unregister("discord:hide_after_minutes");
-            settingRegistry.unregister("discord:display_mode");
+            SettingsHandler.SETTINGS_REGISTRY.unregister("discord:client_id");
+            SettingsHandler.SETTINGS_REGISTRY.unregister("discord:reconnect_on_activity_update");
+            SettingsHandler.SETTINGS_REGISTRY.unregister("discord:hide_after_minutes");
+            SettingsHandler.SETTINGS_REGISTRY.unregister("discord:display_mode");
         } catch (Exception ignored) {
         }
     }

@@ -1,16 +1,11 @@
 package dev.railroadide.discordplugin.data;
 
+import lombok.Getter;
+
+@Getter
 public class DiscordError {
     private int code;
     private String message;
-
-    public int getCode() {
-        return code;
-    }
-
-    public String getMessage() {
-        return message;
-    }
 
     @Override
     public String toString() {
