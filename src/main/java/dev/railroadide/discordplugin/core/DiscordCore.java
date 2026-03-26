@@ -1,7 +1,7 @@
 package dev.railroadide.discordplugin.core;
 
 import dev.railroadide.discordplugin.DiscordPlugin;
-import dev.railroadide.discordplugin.activity.DiscordActivityManager;
+import dev.railroadide.discordplugin.activity.discord.DiscordActivityManager;
 import dev.railroadide.discordplugin.data.*;
 import dev.railroadide.discordplugin.event.DiscordCommand;
 import dev.railroadide.discordplugin.event.DiscordEventHandler;
@@ -21,6 +21,7 @@ import java.util.ArrayDeque;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 
@@ -40,13 +41,13 @@ public final class DiscordCore implements AutoCloseable {
     private String clientId;
     private long nonce;
     private DiscordConnectionState connectionState;
-    @Setter
     @Getter
     private DiscordUser currentUser;
     @Setter
     @Getter
     private long pid = ProcessHandle.current().pid();
     private boolean isShuttingDown = false;
+    private final CopyOnWriteArrayList<Consumer<DiscordUser>> currentUserListeners = new CopyOnWriteArrayList<>();
 
     public DiscordCore(String clientId, BooleanSupplier shouldReconnectOnActivityUpdate) throws DiscordException {
         this.clientId = clientId;
@@ -124,6 +125,41 @@ public final class DiscordCore implements AutoCloseable {
 
         thread.setDaemon(true);
         thread.start();
+    }
+
+    public void updateCurrentUser(DiscordUser user) {
+        this.currentUser = user;
+        for (Consumer<DiscordUser> listener : this.currentUserListeners) {
+            try {
+                listener.accept(user);
+            } catch (Exception exception) {
+                if (DiscordPlugin.getLogger() != null) {
+                    DiscordPlugin.getLogger().error("Failed to run current user listener", exception);
+                }
+            }
+        }
+    }
+
+    public void addCurrentUserListener(Consumer<DiscordUser> listener) {
+        if (listener == null)
+            return;
+
+        if (this.currentUserListeners.contains(listener))
+            return;
+
+        this.currentUserListeners.add(listener);
+
+        try {
+            listener.accept(this.currentUser);
+        } catch (Exception exception) {
+            if (DiscordPlugin.getLogger() != null) {
+                DiscordPlugin.getLogger().error("Failed to run current user listener", exception);
+            }
+        }
+    }
+
+    public void removeCurrentUserListener(Consumer<DiscordUser> listener) {
+        this.currentUserListeners.remove(listener);
     }
 
     private void handleCommand(DiscordCommand command) {

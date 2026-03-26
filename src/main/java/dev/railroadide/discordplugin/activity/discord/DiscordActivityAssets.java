@@ -1,4 +1,4 @@
-package dev.railroadide.discordplugin.activity;
+package dev.railroadide.discordplugin.activity.discord;
 
 public class DiscordActivityAssets {
     private String large_image, large_text, small_image, small_text;

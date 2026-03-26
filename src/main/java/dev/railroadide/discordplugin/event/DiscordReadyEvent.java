@@ -42,7 +42,7 @@ public class DiscordReadyEvent {
         @Override
         public void handle(DiscordCommand command, Data data) {
             this.core.onReady();
-            this.core.setCurrentUser(data.user);
+            this.core.updateCurrentUser(data.user);
         }
 
         @Override

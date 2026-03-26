@@ -2,9 +2,11 @@ package dev.railroadide.discordplugin;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import dev.railroadide.discordplugin.activity.DiscordActivity;
-import dev.railroadide.discordplugin.activity.InactivityManager;
+import dev.railroadide.discordplugin.activity.discord.DiscordActivity;
+import dev.railroadide.discordplugin.activity.ActivityManager;
 import dev.railroadide.discordplugin.core.DiscordCore;
+import dev.railroadide.discordplugin.data.DiscordUser;
+import dev.railroadide.discordplugin.settings.DiscordPluginSettings;
 import dev.railroadide.logger.Logger;
 import dev.railroadide.railroad.localization.L18n;
 import dev.railroadide.railroad.plugin.spi.Plugin;
@@ -21,38 +23,78 @@ import dev.railroadide.railroad.plugin.spi.services.IDEStateService;
 import lombok.Getter;
 
 import java.nio.file.Files;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.Consumer;
 
 public class DiscordPlugin implements Plugin {
     public static final Gson GSON = new GsonBuilder()
             .setPrettyPrinting()
             .disableHtmlEscaping()
             .create();
+    private static final List<Consumer<DiscordUser>> CURRENT_USER_LISTENERS = new CopyOnWriteArrayList<>();
+    private static DiscordPlugin instance;
+
     @Getter
     public static Logger logger;
 
     private DiscordCore discordCore;
-    private InactivityManager inactivityManager;
+    private ActivityManager activityManager;
     private DiscordPluginSettings settings;
+
+    public static DiscordUser getCurrentDiscordUser() {
+        if (instance == null || instance.discordCore == null)
+            return null;
+
+        return instance.discordCore.getCurrentUser();
+    }
+
+    public static void addCurrentUserListener(Consumer<DiscordUser> listener) {
+        if (listener == null)
+            return;
+
+        if (CURRENT_USER_LISTENERS.contains(listener))
+            return;
+
+        CURRENT_USER_LISTENERS.add(listener);
+
+        if (instance == null || instance.discordCore == null)
+            return;
+
+        instance.discordCore.addCurrentUserListener(listener);
+    }
+
+    public static void removeCurrentUserListener(Consumer<DiscordUser> listener) {
+        if (listener == null)
+            return;
+
+        CURRENT_USER_LISTENERS.remove(listener);
+
+        if (instance != null && instance.discordCore != null) {
+            instance.discordCore.removeCurrentUserListener(listener);
+        }
+    }
 
     @Override
     public void onEnable(PluginContext context) {
         if (context == null)
             throw new IllegalArgumentException("PluginContext cannot be null");
 
+        instance = this;
         this.settings = new DiscordPluginSettings();
 
         logger = context.getLogger();
 
-        this.inactivityManager = new InactivityManager(discordCore, logger);
+        this.activityManager = new ActivityManager(discordCore, logger);
 
-        this.inactivityManager.setHideAfterMinutesSupplier(() -> {
+        this.activityManager.setHideAfterMinutesSupplier(() -> {
             Integer configuredValue = this.settings.hideAfterMinutes.getValue();
             if (configuredValue == null)
                 return 0;
 
             return Math.max(0, configuredValue);
         });
-        this.inactivityManager.initializeInactivityTracking();
+        this.activityManager.initializeInactivityTracking();
 
         ApplicationInfoService applicationInfo = context.getService(ApplicationInfoService.class);
         if (applicationInfo == null)
@@ -77,9 +119,9 @@ public class DiscordPlugin implements Plugin {
                         .startNow()
                         .largeImage("logo")
                         .build();
-                this.inactivityManager.publishActivity(activity);
+                this.activityManager.publishActivity(activity);
             } else if (event.isClosed()) {
-                this.inactivityManager.clearAndForgetActivity();
+                this.activityManager.clearAndForgetActivity();
             }
         });
 
@@ -111,11 +153,11 @@ public class DiscordPlugin implements Plugin {
                         .startNow()
                         .largeImage("logo") // TODO: Set the image to the file type
                         .build();
-                this.inactivityManager.publishActivity(activity);
+                this.activityManager.publishActivity(activity);
             }
         });
 
-        eventBus.subscribe(FileModifiedEvent.class, event -> this.inactivityManager.markUserInteraction());
+        eventBus.subscribe(FileModifiedEvent.class, event -> this.activityManager.markUserInteraction());
 
         eventBus.subscribe(EnterDefaultStateEvent.class, event -> {
             if (discordCore != null) {
@@ -126,13 +168,16 @@ public class DiscordPlugin implements Plugin {
                         .startNow()
                         .largeImage("logo")
                         .build();
-                this.inactivityManager.publishActivity(activity);
+                this.activityManager.publishActivity(activity);
             }
         });
 
         try {
             discordCore = new DiscordCore(String.valueOf(this.settings.discordId.getValue()), this.settings.shouldReconnectOnActivityUpdate::getValue);
             discordCore.connect();
+            for (Consumer<DiscordUser> listener : CURRENT_USER_LISTENERS) {
+                discordCore.addCurrentUserListener(listener);
+            }
 
             logger.info("Discord integration started successfully with client ID: " + this.settings.discordId.getValue());
 
@@ -143,7 +188,7 @@ public class DiscordPlugin implements Plugin {
                     .startNow()
                     .largeImage("logo")
                     .build();
-            this.inactivityManager.publishActivity(activity);
+            this.activityManager.publishActivity(activity);
 
             this.settings.discordId.addListener((oldValue, newValue) -> {
                 if (discordCore != null) {
@@ -153,12 +198,12 @@ public class DiscordPlugin implements Plugin {
 
             this.settings.hideAfterMinutes.addListener((oldValue, newValue) -> {
                 if (newValue == null || newValue <= 0) {
-                    this.inactivityManager.cancelHideActivityTask();
-                    this.inactivityManager.restoreActivityIfHidden();
+                    this.activityManager.cancelHideActivityTask();
+                    this.activityManager.restoreActivityIfHidden();
                     return;
                 }
 
-                this.inactivityManager.markUserInteraction();
+                this.activityManager.markUserInteraction();
             });
         } catch (Exception exception) {
             logger.error("Failed to start Discord integration", exception);
@@ -168,9 +213,9 @@ public class DiscordPlugin implements Plugin {
 
     @Override
     public void onDisable(PluginContext context) {
-        if (this.inactivityManager != null) {
-            this.inactivityManager.shutdownInactivityTracking();
-            this.inactivityManager = null;
+        if (this.activityManager != null) {
+            this.activityManager.shutdownInactivityTracking();
+            this.activityManager = null;
         }
 
         if (discordCore != null) {
@@ -183,5 +228,7 @@ public class DiscordPlugin implements Plugin {
             this.settings = null;
         } catch (Exception ignored) {
         }
+
+        instance = null;
     }
 }

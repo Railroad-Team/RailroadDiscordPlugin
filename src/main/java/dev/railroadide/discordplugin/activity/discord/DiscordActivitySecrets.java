@@ -1,4 +1,4 @@
-package dev.railroadide.discordplugin.activity;
+package dev.railroadide.discordplugin.activity.discord;
 
 public class DiscordActivitySecrets {
     private String match;

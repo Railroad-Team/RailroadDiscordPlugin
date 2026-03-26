@@ -1,4 +1,4 @@
-package dev.railroadide.discordplugin.activity;
+package dev.railroadide.discordplugin.activity.discord;
 
 import dev.railroadide.discordplugin.core.DiscordCore;
 import dev.railroadide.discordplugin.data.DiscordResult;

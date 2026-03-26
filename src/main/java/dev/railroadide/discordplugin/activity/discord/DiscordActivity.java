@@ -1,4 +1,4 @@
-package dev.railroadide.discordplugin.activity;
+package dev.railroadide.discordplugin.activity.discord;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -203,6 +203,11 @@ public class DiscordActivity {
             return this;
         }
 
+        public Builder startAt(long start) {
+            activity.timestamps.setStart(Instant.ofEpochMilli(start));
+            return this;
+        }
+
         public Builder startNow() {
             activity.timestamps.setStart(Instant.now());
             return this;
@@ -210,6 +215,11 @@ public class DiscordActivity {
 
         public Builder endAt(Instant end) {
             activity.timestamps.setEnd(end);
+            return this;
+        }
+
+        public Builder endAt(long end) {
+            activity.timestamps.setEnd(Instant.ofEpochMilli(end));
             return this;
         }
 

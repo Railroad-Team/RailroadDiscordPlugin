@@ -25,4 +25,14 @@ public enum DisplayMode {
 
         return null;
     }
+
+    public static DisplayMode fromName(String key) {
+        for (DisplayMode mode : values()) {
+            if (mode.name().equalsIgnoreCase(key)) {
+                return mode;
+            }
+        }
+
+        return null;
+    }
 }

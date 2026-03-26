@@ -1,5 +1,6 @@
 package dev.railroadide.discordplugin.activity;
 
+import dev.railroadide.discordplugin.activity.discord.DiscordActivity;
 import dev.railroadide.discordplugin.core.DiscordCore;
 import dev.railroadide.logger.Logger;
 import dev.railroadide.railroad.Railroad;
@@ -15,7 +16,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.IntSupplier;
 
-public class InactivityManager {
+public class ActivityManager {
     private final DiscordCore discordCore;
     private final Logger logger;
 
@@ -28,7 +29,7 @@ public class InactivityManager {
     private volatile DiscordActivity lastKnownActivity;
     private volatile boolean activityHiddenByInactivity;
 
-    public InactivityManager(DiscordCore discordCore, Logger logger) {
+    public ActivityManager(DiscordCore discordCore, Logger logger) {
         this.discordCore = discordCore;
         this.logger = logger;
     }

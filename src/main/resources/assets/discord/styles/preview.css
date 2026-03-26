@@ -1,0 +1,97 @@
+.presence-card {
+    -fx-background-color: #5865f2; /* bluish */
+    -fx-background-insets: 0;
+    -fx-background-radius: 14;
+    -fx-padding: 16;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.25), 18, 0.2, 0, 6);
+}
+
+/* RR* container defaults can paint opaque backgrounds; keep preview layers transparent. */
+.presence-card * {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+}
+
+.username {
+    -fx-text-fill: white;
+    -fx-font-size: 18px;
+    -fx-font-weight: 700;
+}
+
+.avatar-stack {
+    -fx-min-width: 64;
+    -fx-min-height: 64;
+    -fx-pref-width: 64;
+    -fx-pref-height: 64;
+    -fx-max-width: 64;
+    -fx-max-height: 64;
+}
+
+.section-label {
+    -fx-text-fill: rgba(255,255,255,0.85);
+    -fx-font-size: 11px;
+    -fx-font-weight: 800;
+    -fx-letter-spacing: 0.6px;
+}
+
+.activity-row {
+    -fx-background-color: rgba(0,0,0,0.10);
+    -fx-background-insets: 0;
+    -fx-background-radius: 12;
+    -fx-padding: 10;
+}
+
+.activity-icon-stack {
+    -fx-min-width: 42;
+    -fx-min-height: 42;
+    -fx-pref-width: 42;
+    -fx-pref-height: 42;
+    -fx-max-width: 42;
+    -fx-max-height: 42;
+}
+
+.activity-title {
+    -fx-text-fill: white;
+    -fx-font-size: 14px;
+    -fx-font-weight: 800;
+}
+
+.activity-details {
+    -fx-text-fill: rgba(255,255,255,0.85);
+    -fx-font-size: 12px;
+}
+
+.activity-elapsed {
+    -fx-text-fill: rgba(255,255,255,0.70);
+    -fx-font-size: 11px;
+}
+
+.activity-small-icon-ring {
+    -fx-fill: #5865f2; /* match card color like Discord icon cutout */
+}
+
+.activity-buttons-row {
+    -fx-alignment: center-left;
+}
+
+.activity-button {
+    -fx-background-color: rgba(255,255,255,0.18);
+    -fx-text-fill: white;
+    -fx-font-size: 12px;
+    -fx-font-weight: 700;
+    -fx-background-radius: 6;
+    -fx-padding: 6 12;
+    -fx-cursor: hand;
+}
+
+.activity-button:hover {
+    -fx-background-color: rgba(255,255,255,0.28);
+}
+
+.status-ring {
+    -fx-fill: #5865f2; /* same as card bg */
+}
+
+.status-online {
+    -fx-fill: #3ba55d; /* green */
+}
